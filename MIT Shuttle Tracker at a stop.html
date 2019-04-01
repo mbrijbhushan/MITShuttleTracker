@@ -1,0 +1,146 @@
+<html>
+<div>
+<head>
+
+    <style>
+    
+    #tabDisplay {
+        /*font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+        border-collapse: none;
+        width: 100%;*/
+    }
+   /* #tabDisplay th, td {
+        text-align: left;
+        padding: 8px;
+    }*/
+    #tabDisplay tr:nth-child(odd){background-color: #f2f2f2}
+    #tabDisplay tr:nth-child(even){background-color: white} 
+    #tabDisplay th {
+        background-color: #0303b7;
+        text-shadow: none;
+        color: white;
+    }
+    .refresh_button {
+        background-color: #0303b7;
+        border-radius: 3px;
+        border: none;
+        color: white;
+        padding: 0px 8px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        transition: all 0.5s;
+        margin: 1px 1px;
+        border: 2px solid #4CAF50; /* Green */
+        cursor: pointer;
+    }   
+    
+    .refresh_button:hover {
+    background-color: white;
+    color: black;
+    }
+    
+    </style>
+
+<script>      jQuery(document).ready(function($){
+       
+        $("document").ready(function() {
+        getData();
+        });
+      
+        function getData() {
+            $("#tabDisplay").find("tr:gt(0)").remove();
+            
+            $.ajax({
+            // the URL for the request
+            url: "http://webservices.nextbus.com/service/publicXMLFeed?command=predictions&a=mit&stopId=51",
+
+            // whether this is a POST or GET request
+            type: "GET",
+
+            // the type of data we expect back
+            dataType : "xml"
+            })
+            .done(successFn) //If success, call successFn
+            .fail(errorFn)   //If fail, call errorFn
+            //Always print when request completed
+            .always(function (data, textStatus, jqXHR ) {
+                //console.log("The request is complete!");
+            });
+        }
+      
+        function successFn(result) {
+            //var xml = $.parseXML(result);
+            console.log("Parsing data from XML File!");
+            //var table = "<tr><th>Route</th><th>Direction</th><th>Time</th></tr>";
+            //$("#tabDisplay").append("<tr><th>Route</th><th>Direction</th><th>Time</th></tr>")
+            var predictions = result.getElementsByTagName("predictions");
+            var routeTitle = "";
+            var dirTitle = "";
+            var arrTimes = " ";
+            var strTab = "";
+            $.each(predictions,function(){
+                arrTimes="";
+                dirTitle="";
+                routeTitle = $(this).attr('routeTitle');
+                //console.log($(this).attr('routeTitle'));
+                console.log(routeTitle);
+                dirTitle=$(this).find('direction').attr('title');
+                //console.log("    "+$(this).find('direction').attr('title'))
+                console.log("    "+dirTitle);
+                $(this).find('direction').find('prediction').each(function(){
+                    //console.log("     >"+$(this).find('direction').find('prediction').attr('minutes'))
+                    //console.log("     >"+$(this).attr('minutes'))
+                    arrTimes+=$(this).attr('minutes')+" | "; //make a string of minutes till arrival
+                })
+                console.log("     > "+arrTimes);
+                strTab="<tr><td>"+routeTitle+"</td><td>"+dirTitle+"</td><td>"+arrTimes+"</td></tr>";
+                $("#tabDisplay").append(strTab)
+            })
+          
+            $("#tabDisplay td:nth-child(2)").each(function(){
+                //console.log($(this).text())
+                //console.log(typeof($(this)))
+                if ($(this).text() === 'undefined'){
+                    console.log("Deleting a row!")
+                    $(this).closest('tr').remove();
+                }
+            })
+            
+            //Check the number of rows, if only header then output "No tracking information available"
+            if ( $("#tabDisplay").find("tr").length === 1 ) {
+                console.log("no prediction rows left");
+                $("#tabDisplay").append("<tr><td colspan='3'>No tracking information available</td></tr>");
+            }
+            
+            console.log("Parsing completed!");
+      }
+        
+        function errorFn(xhr, status, strErr) {
+        console.log("There was an error!");
+      }
+        $("#but_refresh").click(function(){
+            getData();
+        });    
+            
+        auto_refresh=setInterval(getData,60000);
+    })
+  </script>
+</head>
+    
+<body>
+
+    <!--Table structure to display data-->
+    <table id="tabDisplay">
+        <tr><th>Route</th><th>Direction</th><th>Time<br>(mins)</th></tr>
+    </table>   
+
+<div align="right">
+    <!--Create button to refresh information-->
+    <button class ="refresh_button" type="button" ID="but_refresh">Refresh</button>
+    </div>
+    
+</body>
+</div>
+</html>
